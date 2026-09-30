@@ -1,0 +1,73 @@
+import numpy as np
+import pandas as pd
+
+results = []
+
+# Set the input and target values
+x = np.array([1.3, 2.7])
+y = 3.2
+
+
+# Assign the weights of hidden layers
+W = np.array([
+    [0.5, -0.3],
+    [0.4, 0.8],
+    [-0.2, 0.6],
+    [0.1, 0.7]
+
+])
+
+# Initial biases
+b = np.array([-0.4, -0.2, 0.5, 0.3 ])
+
+# Initial output weights and output bias
+w_out = np.array([0.3, -0.5, 0.7, 0.2])
+b_out = 0.1
+
+# Initialize learning rate
+learning_rate = 0.02
+
+for epoch in range(10):
+
+    # ----------------
+    # FORWARD PASS
+    # ----------------
+
+    z = W @ x + b # Move the inputs through each weight and add the biases
+    h = np.maximum(0, z) # Get the ReLU to obtain the positive output or 0 if z is negative
+
+    y_pred = h @ w_out + b_out # Move the positive output through the output neuron weights and add the output bias
+
+    loss = (y - y_pred) ** 2 # Calculate the error
+
+    # ----------------
+    # BACKPROPAGATION
+    # ----------------
+
+    dL_dy_pred = -2 * (y - y_pred) # Prediction gradient: how will the loss change if the prediction changes?
+    dL_dv = dL_dy_pred * h # How much did each output weight contribute to the loss
+    dL_dh = dL_dy_pred * w_out # How much does each neuron activation affect the loss?
+
+    relu_gradient = (z > 0).astype(float) # Which neurons allow the error signal to pass backward?
+    dL_dz = dL_dh * relu_gradient # The error signal after it has passed backward through ReLU
+
+    dL_dW = np.outer(dL_dz, x) # Gradient for every hidden layer weight
+    dL_db = dL_dz # Update the biases
+
+    # ----------------
+    # GRADIENT DESCENT
+    # ----------------
+
+    W = W - learning_rate * dL_dW
+    b = b - learning_rate * dL_db
+    w_out = w_out - learning_rate * dL_dv
+    b_out = b_out - learning_rate * dL_dy_pred
+
+    results.append([epoch, y_pred, loss])
+
+df = pd.DataFrame(
+    results,
+    columns=["Epoch", "Prediction", "Loss"]
+)
+
+print(df.to_string(index=False))

@@ -4,8 +4,19 @@ import pandas as pd
 results = []
 
 # Set the input and target values
-x = np.array([1.3, 2.7])
-y = 3.2
+X = np.array([
+    [1.0, 2.0],
+    [2.0, 1.0],
+    [3.0, 1.0],
+    [1.0, 3.0]
+])
+
+Y = np.array([
+    1.5,
+    1.5,
+    2.0,
+    2.0
+])
 
 
 # Assign the weights of hidden layers
@@ -29,45 +40,117 @@ learning_rate = 0.02
 
 for epoch in range(10):
 
+    for i in range(len(X)):
+
+        x = X[i]
+        y = Y[i]
+
     # ----------------
     # FORWARD PASS
     # ----------------
 
-    z = W @ x + b # Move the inputs through each weight and add the biases
-    h = np.maximum(0, z) # Get the ReLU to obtain the positive output or 0 if z is negative
+        z = W @ x + b # Move the inputs through each weight and add the biases
+        h = np.maximum(0, z) # Get the ReLU to obtain the positive output or 0 if z is negative
 
-    y_pred = h @ w_out + b_out # Move the positive output through the output neuron weights and add the output bias
+        y_pred = h @ w_out + b_out # Move the positive output through the output neuron weights and add the output bias
 
-    loss = (y - y_pred) ** 2 # Calculate the error
+        loss = (y - y_pred) ** 2 # Calculate the error
 
-    # ----------------
-    # BACKPROPAGATION
-    # ----------------
+        # ----------------
+        # BACKPROPAGATION
+        # ----------------
 
-    dL_dy_pred = -2 * (y - y_pred) # Prediction gradient: how will the loss change if the prediction changes?
-    dL_dv = dL_dy_pred * h # How much did each output weight contribute to the loss
-    dL_dh = dL_dy_pred * w_out # How much does each neuron activation affect the loss?
+        dL_dy_pred = -2 * (y - y_pred) # Prediction gradient: how will the loss change if the prediction changes?
+        dL_dv = dL_dy_pred * h # How much did each output weight contribute to the loss
+        dL_dh = dL_dy_pred * w_out # How much does each neuron activation affect the loss?
 
-    relu_gradient = (z > 0).astype(float) # Which neurons allow the error signal to pass backward?
-    dL_dz = dL_dh * relu_gradient # The error signal after it has passed backward through ReLU
+        relu_gradient = (z > 0).astype(float) # Which neurons allow the error signal to pass backward?
+        dL_dz = dL_dh * relu_gradient # The error signal after it has passed backward through ReLU
 
-    dL_dW = np.outer(dL_dz, x) # Gradient for every hidden layer weight
-    dL_db = dL_dz # Update the biases
+        dL_dW = np.outer(dL_dz, x) # Gradient for every hidden layer weight
+        dL_db = dL_dz # Update the biases
 
-    # ----------------
-    # GRADIENT DESCENT
-    # ----------------
+        # ----------------
+        # GRADIENT DESCENT
+        # ----------------
 
-    W = W - learning_rate * dL_dW
-    b = b - learning_rate * dL_db
-    w_out = w_out - learning_rate * dL_dv
-    b_out = b_out - learning_rate * dL_dy_pred
+        W = W - learning_rate * dL_dW
+        b = b - learning_rate * dL_db
+        w_out = w_out - learning_rate * dL_dv
+        b_out = b_out - learning_rate * dL_dy_pred
 
-    results.append([epoch, y_pred, loss])
+        results.append([
+            epoch,
+            i + 1,
+            y,
+            y_pred,
+            loss
+        ])
 
 df = pd.DataFrame(
     results,
-    columns=["Epoch", "Prediction", "Loss"]
+    columns=["Epoch", "Example", "Target", "Prediction", "Loss"]
 )
 
 print(df.to_string(index=False))
+
+# ------ DISPLAY HIDDEN REPRESENTATIONS ------
+
+print("\nHidden representations:")
+
+hidden_representations = []
+
+for i in range(len(X)):
+
+    x = X[i]
+
+    z = W @ x + b
+    h = np.maximum(0, z)
+
+    hidden_representations.append(h)
+
+hidden_representations = np.array(hidden_representations)
+
+print(hidden_representations)
+
+
+# ------ DISTANCE BETWEEN REPRESENTATIONS ------
+
+n = len(hidden_representations)
+distance_matrix = np.zeros((n,n))
+
+for i in range (n):
+    for j in range(n):
+        distance_matrix[i, j] = np.linalg.norm(hidden_representations[i] - hidden_representations[j])
+
+
+print("\nHidden distances:")
+
+# Smaller the distance, more similar hidden representations
+for i in range(len(X)):
+    for j in range(i + 1, len(X)):
+        print(
+            "Example", i + 1,
+            "vs Example", j + 1,
+            ":",
+            round(distance_matrix[i, j], 3)
+        )
+
+
+
+# ------ EUCLEDIAN DISTANCE ------
+# Calculate the Eucledian distance from the original X
+# We currently don't know if the differences are caused by input geometry or leanred representational geometry
+# Thus we calculate the Eucledian distance from the original X and compare with the distances between hidden representations
+
+print("\nInput distances:")
+
+for i in range(len(X)):
+    for j in range(i + 1, len(X)):
+        input_distance = np.linalg.norm(X[i] - X[j])
+        print(
+            "Example", i + 1,
+            "vs Example", j + 1,
+            ":",
+            round(input_distance, 3)
+        )
